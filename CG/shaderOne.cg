@@ -16,6 +16,9 @@ struct PixelDataOutput {
 	float3 color : COLOR;
 };
 
+
+float IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir);
+
 VertexDataOutput VertexMain(VertexDataInput vdi, 
   uniform float4x4 modelViewProj, uniform float morphFraction,
   uniform float3 objectCenter, uniform float sphereRadius) {
@@ -81,24 +84,79 @@ VertexDataOutput VertexMain(VertexDataInput vdi,
 //  3. issue texture coordinates, the same way xyz, rgb, nxnynz are issued per vertex
 
 PixelDataOutput FragmentMain(VertexDataOutput pdi, uniform float3 ppcC,
-	uniform float3 billv0, uniform float3 billv1) {
+	uniform float3 billv0, uniform float3 billv1,uniform float3 billv2,uniform float3 billv3) 
+{
 
-  PixelDataOutput ret;
-  ret.color = pdi.color;
+	  PixelDataOutput ret;
+	  ret.color = pdi.color;
 
-  // eye ray computation
-  float3 eyeRay = normalize(pdi.vxyz-ppcC);
-  ret.color.rgb = (eyeRay + float3(1.0f, 1.0f, 1.0f)) / 2.0f;
+	  // eye ray computation
+	  float3 eyeRay = normalize(pdi.vxyz-ppcC);
+	  float3 normal = normalize(pdi.normal);
 
-  // reflected ray computation
-  float3 normal = normalize(pdi.normal);
-  ret.color.rgb = (normal + float3(1.0f, 1.0f, 1.0f)) / 2.0f;
-  float3 reflectedRay = reflect(eyeRay, normal); // requires more work
-  ret.color.rgb = (reflectedRay + float3(1.0f, 1.0f, 1.0f)) / 2.0f;
 
-  return ret;
+	float3 Ray = eyeRay;
+	float3 reflectedRay = reflect(Ray, normal);
+	reflectedRay=normalize(reflectedRay);
+
+	float3 dir = reflectedRay;
+	float3 O = pdi.vxyz;
+	float ret1 = IntersectTriangleWithRay(billv0,billv1,billv2,O,dir);	
+	float ret2 = IntersectTriangleWithRay(billv1,billv3,billv2, O, dir);
+	
+
+	if(ret1==1)
+	{
+	   float3 temp1={1,0.0f,0.0f};
+		ret.color.rgb=temp1;
+	}
+
+	else if(ret2==1)
+	{
+		float3 temp1={0.5f,0.0f,0.0f};
+		ret.color.rgb=temp1;
+	}
+
+	else
+	{
+		float3 temp1={ret1,ret2,0.0f};
+		ret.color.rgb=temp1;
+	}
+    
+	return ret;
 
 }
+
+
+
+float  IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir)
+{
+	float t;
+	float3 barycc;
+	float3x3 tM1=float3x3(v0,v1,v2);
+	float3x3 tM = inverse(tM1);
+	tM=transpose(tM);
+	float3  q = {dot(tM[0],O),dot(tM[1],O),dot(tM[2],O)};
+	float3  r = {dot(tM[0],dir),dot(tM[1],dir),dot(tM[2],dir)};
+	t = (1.0f - (q[0] + q[1] + q[2])) / (r[0] + r[1] + r[2]);
+	
+	
+	if (t < 0.0f)
+		return 0;
+	
+	//barycc = q + dot(r,t);
+	barycc = q + r*t;
+	//return barycc[1];
+	if (barycc[0] < 0.0f)
+		return 0;
+	if (barycc[1] < 0.0f )
+		return 0;
+	if (barycc[2] < 0.0f)
+		return 0;
+	return 1;
+
+}
+
 
 VertexDataOutput VertexMainOLD(VertexDataInput vdi, 
   uniform float4x4 modelViewProj, uniform float sphereRadius,
