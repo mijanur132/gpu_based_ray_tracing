@@ -35,6 +35,10 @@ class ShaderOneInterface {
 
   CGparameter fragmentP1; // test parameter
   CGparameter fragmentppcC; // eye of camera of current frame
+  CGparameter fragmentbillv0; // test parameter
+  CGparameter fragmentbillv1;
+  CGparameter fragmentbillv2; // test parameter
+  CGparameter fragmentbillv3;
   CGparameter vertexMorphFraction; // place in morphing animation from 0 to 1
   CGparameter vertexObjectCenter, vertexSphereRadius; // morph parameters
 public:

@@ -16,6 +16,8 @@ using namespace std;
 
 #include <iostream>
 
+int triangleIntersection(V3 dir, V3 currP, V3 v0, V3 v1, V3 v2, V3 normal);
+
 Scene::Scene() {
 
 	cgi = 0;
@@ -31,7 +33,7 @@ Scene::Scene() {
 
 	fb = new FrameBuffer(u0, v0, w, h, 0);
 	fb->label("SW 1");
-	fb->show();
+	//fb->show();
 	fb->redraw();
 
 	fb3 = new FrameBuffer(u0+w+30, v0, w, h, 0);
@@ -67,44 +69,6 @@ Scene::Scene() {
 	qverts[3] = V3(-20.0f, -5.0f, -20.0f);
 	V3 qcolors[4] = { V3(1.0f, 0.0f, 0.0f), V3(0.0f, 0.0f, 0.0f), V3(0.0f, 0.0f, 0.0f),
 		V3(1.0f, 0.0f, 0.0f) };
-	tmeshes[2].SetQuad(qverts, qcolors);
-	tmeshes[2].Translate(V3(0.0f, 0.0f, -20.0f));
-	tmeshes[2].Translate(V3(0.0f, 6.0f, 0.0f));
-	tmeshes[2].onFlag = 0;
-
-	tmeshes[3].SetQuad(qverts, qcolors);
-	tmeshes[3].Translate(V3(0.0f, 0.0f, -20.0f));
-	tmeshes[3].Translate(V3(0.0f, -6.0f, 0.0f));
-	tmeshes[3].msiFlag = 0;
-
-	tmeshes[4].SetQuad(qverts, qcolors);
-	tmeshes[4].Translate(V3(0.0f, 0.0f, -22.0f));
-	tmeshes[4].colors[0] = tmeshes[4].colors[3] = tmeshes[4].colors[1] = 
-		tmeshes[4].colors[2] = V3(0.0f, 1.0f, 0.0f);
-	tmeshes[4].verts[0] = (tmeshes[4].verts[0] + tmeshes[4].verts[1]) / 2.0f;
-	tmeshes[4].verts[3] = (tmeshes[4].verts[2] + tmeshes[4].verts[3]) / 2.0f;
-
-	
-	AABB aabb;
-	tmeshes[1].SetAABB(aabb);
-	aabb.corners[0][1] += 3.0f;
-
-	// CONTINUE HERE
-	qverts[0] = V3(aabb.corners[0][0], aabb.corners[0][1], aabb.corners[0][2]);
-	qverts[1] = V3(aabb.corners[0][0], aabb.corners[0][1], aabb.corners[1][2]);
-	qverts[2] = V3(aabb.corners[1][0], aabb.corners[0][1], aabb.corners[1][2]);
-	qverts[3] = V3(aabb.corners[1][0], aabb.corners[0][1], aabb.corners[0][2]);
-//	qcolors[0] = qcolors[1] = qcolors[2] = qcolors[3] = V3(1.0f, 0.0f, 0.0f);
-	tmeshes[6].SetQuad(qverts, qcolors);
-	tmeshes[6].texture = new FrameBuffer(100, 100, 64, 64, 0);
-	tmeshes[6].texture->SetChecker(0xFFFFFFFF, 0xFF000000, 8);
-	tmeshes[6].Scale(2.0f);
-
-//	ppc->SetPose(ppc->C + V3(0.0f, 50.0f, 0.0f), tmeshes[1].GetCenter(), V3(0.0f, 1.0f, 0.0f));
-	ppc3->SetPose(V3(0.0f, 40.0f, 50.0f), tmeshes[2].GetCenter(), V3(0.0f, 1.0f, 0.0f));
-
-	tmeshes[3].onFlag = 0;
-	tmeshes[4].onFlag = 0;
 	
 	tmeshes[6].onFlag = 0;
 	tmeshes[7].onFlag = 0;
@@ -127,12 +91,13 @@ Scene::Scene() {
 	//texture->SetChecker(0xFF000000, 0xFFFFFFFF, 16);
 	//tmeshes[5].texture = texture;
 	tmeshes[5].SetQuad(qverts, qcolors);
-	//	tmeshes[5].Translate(V3(0.0f, 0.0f, -400.0f));
+	tmeshes[5].Translate(V3(22.0f, 0.0f, 0.0f));
 
 	tmeshes[5].onFlag = 1;
 	tmeshes[9].onFlag = 1;
-	qs = 20.0f;
-	qz = -100.0f;
+	tmeshes[9].reflectorFlag = 1;
+	qs = 10.0f;
+	qz = -70.0f;
 	qverts[0] = V3(-qs*2.0f, qs, qz);
 	qverts[1] = V3(-qs*2.0f, -qs, qz);
 	qverts[2] = V3(qs*2.0f, -qs, qz);
@@ -147,20 +112,44 @@ Scene::Scene() {
 	L = V3(ppc->C);
 	ka = 0.2f;
 
-	Render();
+	//Render();
 
 	hwfb = new FrameBuffer(u0 + w + 30, v0, w, h, 0);
 	hwfb->label("HW fb");
 	hwfb->isHW = 1;
 	hwfb->show();
-	hwfb->redraw();
+	//hwfb->redraw();
 
 	gpufb = new FrameBuffer(u0 + w + 30, v0 + h + 50, w, h, 0);
 	gpufb->label("GPU Framebuffer");
 	gpufb->isHW = 2;
 	gpufb->show();
-	gpufb->redraw();
+	//gpufb->redraw();
 
+#if 1
+	V3 bv0 = tmeshes[5].GetCenter() + V3(-10, 10, 0);
+	V3 bv1 = tmeshes[5].GetCenter() + V3(-10, -10, 0);
+	V3 bv2 = tmeshes[5].GetCenter() + V3(10, 10, 0);
+	V3 bv3 = tmeshes[5].GetCenter() + V3(10, -10, 0);
+	V3 RayO = tmeshes[9].GetCenter()+ V3(8, 0, 0);
+	
+	
+	V3 Ray = RayO- ppc->C;
+	Ray = Ray.Normalized();
+	V3 normal = tmeshes[9].normals[1].Normalized();
+	V3 reflectedRay = Ray.reflection(normal);	
+	cout << "cen:" << tmeshes[5].GetCenter() << endl;
+	cout << "cen:" << tmeshes[9].GetCenter() << endl;
+	cout <<"ray,reflec:"<< Ray << reflectedRay << endl;
+	cout <<"normal:"<< normal << endl;
+	V3 currc; float currz;
+	V3 dir = reflectedRay;
+	V3 O = RayO;
+	int ret3 = tmeshes[9].IntersectTriangleWithRay(bv0,bv1,bv2,O,dir, currz, currc );
+	cout <<"currcz"<< currc << currz <<"ret"<<ret3<< endl;
+	int ret4 = tmeshes[9].IntersectTriangleWithRay(bv2, bv3, bv0, O, dir, currz, currc);
+	cout <<"currcz"<< currc << currz <<"ret"<< ret4 << endl;
+#endif
 }
 
 void Scene::Render() {
@@ -172,18 +161,7 @@ void Scene::Render(FrameBuffer* rfb, PPC* rppc) {
 
 	rfb->SetBGR(0xFFFFFFFF);
 	rfb->ClearZB();
-	/*
-	for (int tmi = 0; tmi < tmeshesN; tmi++) {
-		if (!tmeshes[tmi].onFlag)
-			continue;
-		//		tmeshes[tmi].DrawWireFrame(rfb, rppc, 0xFF000000);
-		V3 C(1.0f, 0.0f, 0.0f);
-		//		tmeshes[tmi].Light(C, L, ka);
-		tmeshes[tmi].RenderFilled(rfb, rppc, C, L, ka);
-		//		tmeshes[tmi].RayTrace(rfb, rppc);
-	}
-	cout << "calling redraw()" << endl;
-	*/
+
 	rfb->redraw();
 
 }
@@ -213,36 +191,50 @@ void Scene::RenderHW() {
 void Scene::RenderGPU() {
 
 	// if the first time, call per session initialization
-	if (cgi == NULL) {
-		cgi = new CGInterface();
-		cgi->PerSessionInit();
-		soi = new ShaderOneInterface();
-		soi->PerSessionInit(cgi);
-	}
-
-	// clear the framebuffer
-	glClearColor(0.0, 0.0f, 0.5f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// set intrinsics
-	ppc->SetIntrinsicsHW();
-	// set extrinsics
-	ppc->SetExtrinsicsHW();
-
-	// per frame initialization
-	cgi->EnableProfiles();
-	soi->PerFrameInit();
-	soi->BindPrograms();
-
-	// render geometry
-	for (int tmi = 0; tmi < tmeshesN; tmi++) {
+	for (int tmi = 0; tmi < tmeshesN; tmi++)
+	{
 		if (!tmeshes[tmi].onFlag)
 			continue;
-		tmeshes[tmi].RenderHW();
-	}
+		if (tmeshes[tmi].reflectorFlag == 1) 
+		{
 
-	soi->PerFrameDisable();
-	cgi->DisableProfiles();
+			if (cgi == NULL) {
+				cgi = new CGInterface();
+				cgi->PerSessionInit();
+				soi = new ShaderOneInterface();
+				soi->PerSessionInit(cgi);
+			}
+
+			// clear the framebuffer
+			glClearColor(0.0, 0.0f, 0.5f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			// set intrinsics
+			ppc->SetIntrinsicsHW();
+			// set extrinsics
+			ppc->SetExtrinsicsHW();
+
+			// per frame initialization
+			cgi->EnableProfiles();
+			soi->PerFrameInit();
+			soi->BindPrograms();
+#if 0
+			// render geometry
+			for (int tmi = 0; tmi < tmeshesN; tmi++) {
+				if (!tmeshes[tmi].onFlag)
+					continue;
+				tmeshes[tmi].RenderHW();
+			}
+#endif
+			tmeshes[tmi].RenderHW();
+			soi->PerFrameDisable();
+			cgi->DisableProfiles();
+		}
+		else 
+		{
+			tmeshes[tmi].RenderHW();
+		}
+	}
 	   
 }
 
@@ -547,6 +539,69 @@ void Scene::DBG() {
 //		fb->Draw2DSegment(uv0, uv1, col);
 	}
 
+}
+
+int triangleIntersection(V3 dir, V3 currP, V3 v0, V3 v1, V3 v2, V3 normal)
+{
+	int ret = 0;
+	V3 orig = currP;
+	V3 v0v1 = v1 - v0;
+	V3 v0v2 = v2 - v0;
+	// no need to normalize
+	V3 N = normal.Normalized(); // N 
+	N = N;
+	//cout << "N "<<tri<<N << endl;
+	//cout << dir << endl;
+	// Step 1: finding P
+
+	// check if ray and plane are parallel ?
+	float NdotRayDirection = N * dir;
+	//cout << "Nparallel:" << NdotRayDirection << endl;
+	if (fabs(NdotRayDirection) < 0.001) // almost 0 
+		return ret; // they are parallel so they don't intersect ! 
+
+	// compute d parameter using equation 2
+	float d = N * v0;
+
+	// compute t (equation 3)
+	float t = ((N * orig) + d) / NdotRayDirection;
+	//cout << "t" << t << endl;
+	// check if the triangle is in behind the ray
+	cout << "t" << t << endl;
+	if (t < 0)
+		return ret;// the triangle is behind 
+
+	// compute the intersection point using equation 1
+	V3 P = orig + dir * t;
+
+	//cout << "p" <<P<< endl;
+	// Step 2: inside-outside test
+	V3 C; // vector perpendicular to triangle's plane 
+
+
+	//cout << uvw << endl;
+	// edge 0
+	V3 edge0 = v1 - v0;
+	V3 vp0 = P - v0;
+	C = edge0 ^ vp0;
+	if (N * C < 0)
+		return ret; // P is on the right side 
+
+	// edge 1
+	V3 edge1 = v2 - v1;
+	V3 vp1 = P - v1;
+	C = edge1 ^ vp1;
+	if (N * C < 0)
+		return ret; // P is on the right side 
+
+	// edge 2
+	V3 edge2 = v0 - v2;
+	V3 vp2 = P - v2;
+	C = edge2 ^ (vp2);
+	if (N * (C) < 0)
+		return ret; // P is on the right side; 
+
+	return 1;
 }
 
 

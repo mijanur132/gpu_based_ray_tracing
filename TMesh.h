@@ -10,7 +10,7 @@ class TMesh {
 public:
 	int onFlag;
 	int msiFlag;
-	int reflectorFlag;
+	int reflectorFlag=0;
 	V3 *verts;
 	V3 *colors;
 	V3 *normals;

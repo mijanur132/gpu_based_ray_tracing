@@ -476,10 +476,16 @@ int TMesh::IntersectTriangleWithRay(V3 v0, V3 v1, V3 v2, V3 O, V3 dir, float &t,
 	tM = tM.Inverted();
 	V3 q = tM*O;
 	V3 r = tM*dir;
+	cout << "tM0"<<tM[0] << tM[1] << tM[2] << endl;
+	cout << "dir o" << dir <<O<< endl;
+	cout << "q" << q << endl;
+	cout << "R" << r << endl;
 	t = (1.0f - (q[0] + q[1] + q[2])) / (r[0] + r[1] + r[2]);
 	if (t < 0.0f)
 		return 0;
 	barycc = q + r*t;
+	cout << "T" << t << endl;
+	cout << "barycc:" << barycc << endl;
 	if (barycc[0] < 0.0f || barycc[1] < 0.0f || barycc[2] < 0.0f)
 		return 0;
 	return 1;

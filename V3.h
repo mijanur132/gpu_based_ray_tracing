@@ -27,4 +27,5 @@ public:
 	V3 RotateVector(V3 adir, float theta);
 	V3 Light(V3 lv, V3 nv, float ka);
 	V3 Reflect(V3 ray);
+	V3 reflection(V3 normal_n); //my reflection
 };

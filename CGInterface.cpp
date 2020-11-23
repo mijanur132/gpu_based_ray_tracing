@@ -97,6 +97,10 @@ bool ShaderOneInterface::PerSessionInit(CGInterface *cgi) {
 
   fragmentP1 = cgGetNamedParameter(fragmentProgram, "p1");
   fragmentppcC = cgGetNamedParameter(fragmentProgram, "ppcC");
+  fragmentbillv0 = cgGetNamedParameter(fragmentProgram, "billv0");
+  fragmentbillv1 = cgGetNamedParameter(fragmentProgram, "billv1");
+  fragmentbillv2 = cgGetNamedParameter(fragmentProgram, "billv2");
+  fragmentbillv3 = cgGetNamedParameter(fragmentProgram, "billv3");
 
   return true;
 
@@ -120,7 +124,15 @@ void ShaderOneInterface::PerFrameInit() {
   cgSetParameter1f(vertexSphereRadius, sphereRadius);
   cgSetParameter1f(vertexMorphFraction, scene->morphFraction);
   cgSetParameter3fv(fragmentppcC, (float*)&(scene->ppc->C));
-
+  V3 bv0 = scene->tmeshes[5].GetCenter() + V3(-10, 10, 0); 
+  V3 bv1 = scene->tmeshes[5].GetCenter() + V3(-10, -10, 0);
+  V3 bv2 = scene->tmeshes[5].GetCenter() + V3(10, 10, 0);
+  V3 bv3 = scene->tmeshes[5].GetCenter() + V3(10, -10, 0);
+  cout<<"center,billvo,billv1"<< scene->tmeshes[5].GetCenter() <<bv0<< bv1<<bv2<<bv3<<endl;
+  cgSetParameter3fv(fragmentbillv0, (float*) & bv0);
+  cgSetParameter3fv(fragmentbillv1, (float*) & bv1);
+  cgSetParameter3fv(fragmentbillv2, (float*) &bv2);
+  cgSetParameter3fv(fragmentbillv3, (float*) &bv3);
 }
 
 void ShaderOneInterface::PerFrameDisable() {

@@ -160,3 +160,19 @@ V3 V3::Reflect(V3 r) {
 	return rr;
 
 }
+
+
+V3 V3::reflection(V3 normal_n) {
+	V3 incidentRay_d = *this;
+	normal_n = normal_n.Normalized();
+	//	cout << *this << " " << normal_n << endl;
+	V3 r(0, 0, 0);
+	float d_dot_n = incidentRay_d * normal_n;
+	//	cout << " ddotn:" << d_dot_n << endl;
+	d_dot_n = d_dot_n * 2;
+	V3 normal_n_d_dot_n = normal_n * d_dot_n;
+	//cout << "normal_n * d_dot_n: " << normal_n_d_dot_n << endl;
+	r = incidentRay_d - normal_n_d_dot_n;
+	//cout <<"reflection: "<< r << endl;
+	return r;
+}
