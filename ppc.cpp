@@ -215,18 +215,77 @@ void PPC::SetIntrinsicsHW() {
 	glFrustum(-wf / 2.0f*scalef, wf / 2.0f*scalef, -hf / 2.0f*scalef, 
 		hf / 2.0f*scalef, hither, yon);
 	glMatrixMode(GL_MODELVIEW); // default matrix mode
+}
 
+void PPC::SetExtrinsicsHW(V3 eye, V3 look, V3 down) {
+	//V3 eye, look, down;
+	//eye = C;
+	//look = C + (a^b)*100.0f;
+	//down = b.Normalized();
+	glLoadIdentity();
+	gluLookAt(eye[0], eye[1], eye[2], 
+		look[0], look[1], look[2], 
+		-down[0], -down[1], -down[2]);
 }
 
 void PPC::SetExtrinsicsHW() {
-
 	V3 eye, look, down;
 	eye = C;
 	look = C + (a^b)*100.0f;
 	down = b.Normalized();
 	glLoadIdentity();
-	gluLookAt(eye[0], eye[1], eye[2], 
-		look[0], look[1], look[2], 
+	gluLookAt(eye[0], eye[1], eye[2],
+		look[0], look[1], look[2],
 		-down[0], -down[1], -down[2]);
+}
+
+
+
+void PPC::Roll(float angled) {
+	V3 dv = GetVD().Normalized();
+	a = a.RotateThisVectorAboutDirection(dv, angled);
+	b = b.RotateThisVectorAboutDirection(dv, angled);
+	c = c.RotateThisVectorAboutDirection(dv, angled);
+}
+V3 PPC::GetVD() {
+
+	return (a ^ b).Normalized();
+
+}
+
+V3 PPC::GetUnitRay(float uf, float vf) {
+
+	V3 ray = a * uf + b * vf + c;
+	return ray.UnitVector();
+}
+
+V3 PPC::GetRayVector(float uf, float vf)
+{
+	V3 sceneP(uf, vf, 1);
+	V3 rayVec = UnProject(sceneP) - C;
+	return rayVec;
+}
+
+V3 PPC::lookAtRayVecDir(V3 rayVec)
+{
+	V3 envP(0, 0, 0);
+	V3 newRayVec = C + rayVec;
+	Project(newRayVec, envP);
+	return envP;
+}
+
+void PPC::Tilt(float angled) {
+
+
+	V3 dv = a.UnitVector();
+	b = b.RotateThisVectorAboutDirection(dv, angled);
+	c = c.RotateThisVectorAboutDirection(dv, angled);
+
+
+}
+
+void PPC::printPPC() {
+
+	cout << "C:" << c << " a:" << a << " b:" << b << " c:" << c << " vd:" << GetVD() << " w:" << w << " h:" << h << endl;
 
 }

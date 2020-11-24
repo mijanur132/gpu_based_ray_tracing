@@ -28,4 +28,10 @@ public:
 	V3 Light(V3 lv, V3 nv, float ka);
 	V3 Reflect(V3 ray);
 	V3 reflection(V3 normal_n); //my reflection
+
+	V3 UnitVector();
+
+
+	V3 RotateThisPointAboutArbitraryAxis(V3 O, V3 a, float angled);     //i
+	V3 RotateThisVectorAboutDirection(V3 a, float angled);				//k
 };

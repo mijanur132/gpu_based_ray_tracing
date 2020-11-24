@@ -89,13 +89,7 @@ bool ShaderOneInterface::PerSessionInit(CGInterface *cgi) {
 
 	// build some parameters by name such that we can set them later...
   vertexModelViewProj = cgGetNamedParameter(vertexProgram, "modelViewProj" );
-  geometryModelViewProj = cgGetNamedParameter(geometryProgram, "modelViewProj" );
 
-  vertexSphereRadius = cgGetNamedParameter(vertexProgram, "sphereRadius");
-  vertexObjectCenter = cgGetNamedParameter(vertexProgram, "objectCenter");
-  vertexMorphFraction = cgGetNamedParameter(vertexProgram, "morphFraction");
-
-  fragmentP1 = cgGetNamedParameter(fragmentProgram, "p1");
   fragmentppcC = cgGetNamedParameter(fragmentProgram, "ppcC");
   fragmentbillv0 = cgGetNamedParameter(fragmentProgram, "billv0");
   fragmentbillv1 = cgGetNamedParameter(fragmentProgram, "billv1");
@@ -116,13 +110,7 @@ void ShaderOneInterface::PerFrameInit() {
     geometryModelViewProj, 
 	  CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 
-  V3 C = scene->tmeshes[1].GetCenter();
-  cgSetParameter3fv(vertexObjectCenter, (float*)&C);
-  AABB aabb;
-  scene->tmeshes[1].SetAABB(aabb);
-  float sphereRadius = (aabb.corners[1] - aabb.corners[0]).Length() / 6.0f;
-  cgSetParameter1f(vertexSphereRadius, sphereRadius);
-  cgSetParameter1f(vertexMorphFraction, scene->morphFraction);
+
   cgSetParameter3fv(fragmentppcC, (float*)&(scene->ppc->C));
   V3 bv0 = scene->tmeshes[5].GetCenter() + V3(-10, 10, 0); 
   V3 bv1 = scene->tmeshes[5].GetCenter() + V3(-10, -10, 0);

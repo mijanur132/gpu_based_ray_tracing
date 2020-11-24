@@ -24,8 +24,18 @@ public:
 	void Visualize(FrameBuffer *vfb, PPC *vppc, float vf, FrameBuffer *fb);
 	void SetInterpolated(PPC *ppc0, PPC *ppc1, int stepsN, int stepi);
 	float GetF();
+
+	void Roll(float angled);
+	void Tilt(float angled);
+	V3 GetVD();
+	V3 GetUnitRay(float uf, float vf);
+	V3 GetRayVector(float uf, float vf);
+	V3 lookAtRayVecDir(V3 rayVec);
+	void printPPC();
+
 	void ScaleFocalLength(float flscf);
 	M33 CameraMatrix();
 	void SetIntrinsicsHW();
 	void SetExtrinsicsHW();
+	void SetExtrinsicsHW(V3 eye, V3 look, V3 down);
 };

@@ -2,10 +2,12 @@
 
 #include <fstream>
 #include <iostream>
-
+#include "stb_image.h"
+#include "stb_image_write.h"
 #include "M33.h"
 #include "TMesh.h"
 #include "AABB.h"
+#include "vector"
 
 using namespace std;
 
@@ -589,15 +591,63 @@ void TMesh::Scale(float scf) {
 }
 
 void TMesh::RenderHW() {
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	vector<std::string> faces=
+	{
+			"right_1.png",
+			"left_1.png",
+			"top_1.png",
+			"bottom_1.png",
+			"front_1.png",
+			"back_11.png"
+	};
+	
+	int width, height, nrChannels;
+	unsigned char* data;
+	
+	for (unsigned int i = 0; i <faces.size(); i++)
+	{
+		data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data == nullptr) {
+			std::cerr << "Image reading failed." << std::endl;
+			return;
+		}
+		else if (nrChannels != 3 && nrChannels != 4) {
+			//std::cerr << "The loaded image doesn't have RGB color components." << std::endl;
+			//std::cerr << "The loaded image has " << nrChannels << " channels" << std::endl;
+			return;
+		}
+		else {
+			//std::cout << "The image loaded has size " << width << "x" << height << std::endl;
+		}
+
+		glTexImage2D(
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+		);
+	}
+
+	glEnable(GL_TEXTURE_CUBE_MAP);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
+
 	glVertexPointer(3, GL_FLOAT, 0, (float*)verts);
 	glColorPointer(3, GL_FLOAT, 0, (float*)colors);
 	glNormalPointer(GL_FLOAT, 0, (float*)normals);
 	glDrawElements(GL_TRIANGLES, 3 * trisN, GL_UNSIGNED_INT, tris);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	glDisable(GL_TEXTURE_CUBE_MAP);
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);

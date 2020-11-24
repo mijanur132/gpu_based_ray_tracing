@@ -14,7 +14,7 @@ public:
 	ShaderOneInterface *soi;
 
 	GUI *gui;
-	FrameBuffer *fb, *fb3, *hwfb, *gpufb;
+	FrameBuffer *fb, *fb3, *hwfb, *gpufb, *fbEnv,*fb0,*fb1;
 	PPC *ppc, *ppc3;
 	TMesh *tmeshes;
 	int tmeshesN;

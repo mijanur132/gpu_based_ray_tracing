@@ -176,3 +176,68 @@ V3 V3::reflection(V3 normal_n) {
 	//cout <<"reflection: "<< r << endl;
 	return r;
 }
+
+V3 V3::UnitVector() {
+
+	return (*this) * (1.0f / Length());
+
+}
+
+V3 V3::RotateThisPointAboutArbitraryAxis(V3 O, V3 a, float angled) {
+
+	// find auxiliary axis
+	V3 aux;
+	if (fabsf(a[0]) > fabsf(a[1])) {
+		aux = V3(0.0f, 1.0f, 0.0f);
+	}
+	else {
+		aux = V3(1.0f, 0.0f, 0.0f);
+	}
+
+	V3 a0 = (aux ^ a).UnitVector();
+	V3 a2 = (a0 ^ a).UnitVector();
+	M33 lcs;
+	lcs[0] = a0;
+	lcs[1] = a;
+	lcs[2] = a2;
+
+	V3& p = *this;
+	// change to local coordinate system O, a0, a, a2
+	V3 p1 = lcs * (p - O);
+	// rotate about "Second axis" in local coordinate system;
+	M33 mr; mr.SetRotationAboutY(angled);
+	V3 p2 = mr * p1;
+	V3 p3 = lcs.Inverted() * p2 + O;
+	return p3;
+
+}
+
+
+V3 V3::RotateThisVectorAboutDirection(V3 a, float angled) {
+
+	// find auxiliary axis
+	V3 aux;
+	if (fabsf(a[0]) > fabsf(a[1])) {
+		aux = V3(0.0f, 1.0f, 0.0f);
+	}
+	else {
+		aux = V3(1.0f, 0.0f, 0.0f);
+	}
+
+	V3 a0 = (aux ^ a).Normalized();
+	V3 a2 = (a0 ^ a).Normalized();
+	M33 lcs;
+	lcs[0] = a0;
+	lcs[1] = a;
+	lcs[2] = a2;
+
+	V3& p = *this;
+	// change to local coordinate system O, a0, a, a2
+	V3 p1 = lcs * p;
+	// rotate about "Second axis" in local coordinate system;
+	M33 mr; mr.SetRotationAboutY(angled);
+	V3 p2 = mr * p1;
+	V3 p3 = lcs.Inverted() * p2;
+	return p3;
+
+}
