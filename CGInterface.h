@@ -39,13 +39,15 @@ class ShaderOneInterface {
   CGparameter fragmentbillv1;
   CGparameter fragmentbillv2; // test parameter
   CGparameter fragmentbillv3;
+  CGparameter fragmentenvReflec;
+
   CGparameter vertexMorphFraction; // place in morphing animation from 0 to 1
   CGparameter vertexObjectCenter, vertexSphereRadius; // morph parameters
 public:
   ShaderOneInterface() {};
   bool PerSessionInit(CGInterface *cgi); // per session initialization
   void BindPrograms(); // enable geometryProgram, vertexProgram, fragmentProgram
-  void PerFrameInit(); // set uniform parameter values, etc.
+  void PerFrameInit(float envReflec); // set uniform parameter values, etc.
   void PerFrameDisable(); // disable programs
 
 };

@@ -34,98 +34,36 @@ Scene::Scene() {
 	int h = 300;
 	int w = 500;
 
-	fb = new FrameBuffer(u0, v0, w, h, 0);
-	fb->label("SW 1");
-	//fb->show();
-	fb->redraw();
-
-	fb3 = new FrameBuffer(u0+w+30, v0, w, h, 0);
-	fb3->label("SW 3");
-//	fb3->show();
-	fb3->redraw();
-
-	fb0 = new FrameBuffer(u0, v0, w, h, 0);
-	fb0->label("0bject to be projected");
-	//fb0->show();
-	fb0->redraw();
-
-	fb1 = new FrameBuffer(u0 + 100 + 30, v0, w, h, 0);
-	fb1->label("Main camera view");
-	fb1->show();
-	fb1->redraw();
-
 	fbEnv = new FrameBuffer(u0 + w + 30, v0, w, h, 0);
 	fbEnv->label("fb Env view");
 
 	gui->uiw->position(u0, v0 + h + 50);
 
 	float hfov = 55.0f;
-	ppc = new PPC(hfov, fb->w, fb->h);
-	ppc3 = new PPC(hfov, fb3->w, fb3->h);
+	ppc = new PPC(hfov, w, h);
+	ppcBB = new PPC(hfov, w, h);
 
 	tmeshesN = 10;
 	tmeshes = new TMesh[tmeshesN];
 
-	V3 cc(0.0f, 0.0f, -100.0f);
-	float sideLength = 60.0f;
-	tmeshes[0].SetToCube(cc, sideLength, 0xFF0000FF, 0xFF000000);
-	tmeshes[0].onFlag = 0;
+	tmeshes[1].onFlag = 1;
+	tmeshes[1].shader = 1;
+	tmeshes[1].SetToCube(V3(0, 0, 0), 800, 0, 1);
 
-	tmeshes[1].LoadBin("geometry/teapot1K.bin");
-//	tmeshes[1].LoadBin("geometry/teapot57K.bin");
-	tmeshes[1].SetCenter(V3(0.0f, 0.0f, -140.0f));
-	tmeshes[1].onFlag = 0;
-	tmeshes[1].reflectorFlag = 1;
-
-	V3 qverts[4];
-	qverts[0] = V3(-20.0f, 5.0f, -20.0f);
-	qverts[1] = V3(100.0f, 5.0f, -200.0f);
-	qverts[2] = V3(100.0f, -5.0f, -200.0f);
-	qverts[3] = V3(-20.0f, -5.0f, -20.0f);
-	V3 qcolors[4] = { V3(1.0f, 0.0f, 0.0f), V3(0.0f, 0.0f, 0.0f), V3(0.0f, 0.0f, 0.0f),
-		V3(1.0f, 0.0f, 0.0f) };
 	
-	tmeshes[6].onFlag = 0;
-	tmeshes[7].onFlag = 0;
-	tmeshes[8].onFlag = 0;
+	tmeshes[2].LoadBin("geometry/teapot1K.bin");
+	tmeshes[2].SetCenter(V3(0.0f, 0.0f, -250.0f));
+	tmeshes[2].onFlag = 1;
+	tmeshes[2].shader = 0;//
+	tmeshes[2].onBillboard = 1;
 
-	float qz = -50.0f;
-	float qs = 10.0f;
-	qverts[0] = V3(-qs, qs, qz);
-	qverts[1] = V3(-qs, -qs, qz);
-	qverts[2] = V3(qs, -qs, qz);
-	qverts[3] = V3(qs, qs, qz);
-	qcolors[0] = V3(0.0f, 0.0f, 1.0f);
-	qcolors[1] = V3(0.0f, 0.0f, 1.0f);
-	qcolors[2] = V3(0.0f, 0.0f, 1.0f);
-	qcolors[3] = V3(0.0f, 0.0f, 1.0f);
-
-	tmeshes[5].SetQuad(qverts, qcolors);
-	tmeshes[5].Translate(V3(20.0f, -10.0f, 0.0f));
-	tmeshes[5].onFlag = 1;
-	tmeshes[9].reflectorFlag = 0;
-
-	tmeshes[9].onFlag = 1;
-	tmeshes[9].reflectorFlag = 1;
-	qs = 10.0f;
-	qz = -150.0f;
-	qverts[0] = V3(-qs*2.0f, qs, qz);
-	qverts[1] = V3(-qs*2.0f, -qs, qz);
-	qverts[2] = V3(qs*2.0f, -qs, qz);
-	qverts[3] = V3(qs*2.0f, qs, qz);
-	qcolors[0] = V3(0.0f, 0.0f, 0.0f);
-	qcolors[1] = V3(0.0f, 1.0f, 0.0f);
-	qcolors[2] = V3(1.0f, 1.0f, 0.0f);
-	qcolors[3] = V3(1.0f, 0.0f, 0.0f);
-	//tmeshes[9].SetQuad(qverts, qcolors);
+	//tmeshes[9].SetToCube(V3(0, 0, -50), 20, 0, 1);
 	tmeshes[9].LoadBin("geometry/teapot1K.bin");
-	tmeshes[9].SetCenter(V3(0.0f, 0.0f, -100.0f));
-	vf = 20.0f;
-	L = V3(ppc->C);
-	ka = 0.2f;
+	tmeshes[9].SetCenter(V3(0.0f, 0.0f, -150.0f));
+	tmeshes[9].onFlag = 1;
+	tmeshes[9].shader = 1;//
 
 	//Render();
-
 	hwfb = new FrameBuffer(u0 + w + 30, v0, w, h, 0);
 	hwfb->label("HW fb");
 	hwfb->isHW = 1;
@@ -136,13 +74,9 @@ Scene::Scene() {
 	gpufb->label("GPU Framebuffer");
 	gpufb->isHW = 2;
 	gpufb->show();
-	//gpufb->redraw();
 
-	fbEnv->LoadTiff("panaroma.tiff");	
-	fb1->SetBGR(0xFFFFFFFF);
+	RenderHW();
 	
-
-
 #if 0
 	V3 bv0 = tmeshes[5].GetCenter() + V3(-10, 10, 0);
 	V3 bv1 = tmeshes[5].GetCenter() + V3(-10, -10, 0);
@@ -189,87 +123,122 @@ void Scene::RenderHW() {
 	glEnable(GL_DEPTH_TEST);
 
 	// clear buffers
-	glClearColor(1.0f, 0.0f, 0.5f, 1.0f);
+	glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
 	// set the view desired by the application (the user)
-	ppc->SetIntrinsicsHW();	
-	ppc->SetPose(V3(0, 0, 100), tmeshes[5].GetCenter(), V3(0, 1, 0));
-	ppc->SetExtrinsicsHW();
-	//ppc->SetExtrinsicsHW(V3(0,0,200),tmeshes[5].GetCenter(),V3(0,1,0));
-	
-#if 0  previous method from software version. in Hw probably we need to use texture here. 
-	cubemap cm1(fbEnv);
-	matrix currenvmap = cm1.envmap(ppc);
-	currenvmap.mat2fbPix(fb1);
+	ppcBB->SetIntrinsicsHW();	
+	V3 lookatP = tmeshes[9].GetCenter();
+	V3 vec = tmeshes[2].GetCenter()- tmeshes[9].GetCenter();
+	V3 newC = tmeshes[9].GetCenter() + vec*2;
+	V3 upv(0, 1, 0);	
+	ppcBB->SetPose(newC, lookatP, upv);
+	ppcBB->SetExtrinsicsHW();
 
-#endif 
 	// draw the actual geometry
 	for (int tmi = 0; tmi < tmeshesN; tmi++) {
 		if (!tmeshes[tmi].onFlag)
 			continue;
+		if (!tmeshes[tmi].onBillboard)
+			continue;
 		tmeshes[tmi].RenderHW();
 	}
-
 }
 
 void Scene::RenderGPU() {
 
 	// if the first time, call per session initialization
+	glClearColor(1.0, 0.0f, 0.5f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	for (int tmi = 0; tmi < tmeshesN; tmi++)
 	{
 		if (!tmeshes[tmi].onFlag)
 			continue;
-		if (tmeshes[tmi].reflectorFlag == 1) 
-		{
 
+		if (tmeshes[tmi].shader == 1) 
+		{
+			envReflec = 0;
+			tmeshes[tmi].envReflec = 0;
+			
+			if (tmi == 9)//tpot
+			{
+				envReflec = 1;
+				tmeshes[tmi].envReflec = 1;
+			}
 			if (cgi == NULL) {
 				cgi = new CGInterface();
 				cgi->PerSessionInit();
 				soi = new ShaderOneInterface();
 				soi->PerSessionInit(cgi);
 			}
-
-			// clear the framebuffer
-			glClearColor(0.0, 0.0f, 0.5f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+				
 			// set intrinsics
 			ppc->SetIntrinsicsHW();
 			// set extrinsics
-			ppc->SetExtrinsicsHW(V3(0, 0, 200), tmeshes[5].GetCenter(), V3(0, -1, 0));
-
+			V3 lookatP = tmeshes[9].GetCenter();
+			V3 currC = ppc->C;
+			V3 upv(0, 1, 0);
+			V3 newC = currC.RotatePoint(lookatP, upv, 2.0f);
+			ppc->SetPose(newC, lookatP, upv);
+			ppc->SetExtrinsicsHW();
 			// per frame initialization
 			cgi->EnableProfiles();
-			soi->PerFrameInit();
+			soi->PerFrameInit(tmeshes[tmi].envReflec);
 			soi->BindPrograms();
-#if 1
-			// render geometry
-			for (int tmi = 0; tmi < tmeshesN; tmi++) {
-				if (!tmeshes[tmi].onFlag)
-					continue;
-				tmeshes[tmi].RenderHW();
-			}
-#endif
+
 			tmeshes[tmi].RenderHW();
 			soi->PerFrameDisable();
 			cgi->DisableProfiles();
 		}
 		else 
 		{
-			tmeshes[tmi].RenderHW();
+			tmeshes[tmi].RenderHWBB();
 		}
 	}
 	   
 }
 
 
+void Scene::RenderHWBB() {
+
+	// initializations (could be done once per session)
+	glEnable(GL_DEPTH_TEST);
+
+	// clear buffers
+	glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	// set the view desired by the application (the user)
+	ppcBB->SetIntrinsicsHW();
+	V3 lookatP = tmeshes[2].GetCenter();
+	V3 vec = tmeshes[2].GetCenter() - tmeshes[9].GetCenter();
+	V3 newC = tmeshes[9].GetCenter() - vec * 2;
+	V3 upv(0, 1, 0);
+	ppcBB->SetPose(newC, lookatP, upv);
+	ppcBB->SetExtrinsicsHW();
+
+	// draw the actual geometry
+	for (int tmi = 0; tmi < tmeshesN; tmi++) {
+		if (!tmeshes[tmi].onFlag)
+			continue;
+		if (!tmeshes[tmi].onBillboard)
+			continue;
+		tmeshes[tmi].RenderHWBB();
+	}
+}
 
 
 
 void Scene::DBG() {
 
+	{
+		int fN = 1000;
+		for (int i = 0; i < fN; i++) {			
+			gpufb->redraw();
+			Fl::check();
+		}
+		return;
 
+	}
 	{
 		int fN = 1000;
 		for (int i = 0; i < fN; i++) {

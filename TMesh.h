@@ -10,7 +10,10 @@ class TMesh {
 public:
 	int onFlag;
 	int msiFlag;
-	int reflectorFlag=0;
+	int reflectorFlag;
+	int onBillboard = 0;
+	int shader=0;
+	int envReflec;
 	V3 *verts;
 	V3 *colors;
 	V3 *normals;
@@ -43,4 +46,6 @@ public:
 	void SetAABB(AABB &aabb);
 	void Scale(float scf);
 	void RenderHW();
+	void RenderHWBB();
+	unsigned int cubeTexture();
 };

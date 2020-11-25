@@ -12,10 +12,10 @@ public:
 
 	CGInterface * cgi;
 	ShaderOneInterface *soi;
-
+	int envReflec = 0; //0 not reflectionBackground
 	GUI *gui;
 	FrameBuffer *fb, *fb3, *hwfb, *gpufb, *fbEnv,*fb0,*fb1;
-	PPC *ppc, *ppc3;
+	PPC *ppc, *ppcBB,*ppc3;
 	TMesh *tmeshes;
 	int tmeshesN;
 	Scene();
@@ -24,6 +24,7 @@ public:
 	void Render();
 	void Render(FrameBuffer *rfb, PPC *rppc); // projection followed by rasterization
 	void RenderHW();
+	void RenderHWBB();
 	void RenderGPU();
 	void RenderRayTracing(FrameBuffer *rfb, PPC *rppc); // ray tracing
 	int RayTrace(V3 rO, V3 rdir, int rayOrder, V3& rc, float &currz);

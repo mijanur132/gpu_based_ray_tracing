@@ -37,7 +37,7 @@ void FrameBuffer::draw() {
 	
 	// for HW and GPU framebuffers
 	if (isHW == 1) {
-		scene->RenderHW();
+		scene->RenderHWBB();
 	}
 	else {
 		cout<<"draw():"<<isHW<<endl;

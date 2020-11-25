@@ -590,12 +590,13 @@ void TMesh::Scale(float scf) {
 
 }
 
-void TMesh::RenderHW() {
+unsigned int TMesh::cubeTexture() {
+
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-	vector<std::string> faces=
+	vector<std::string> faces =
 	{
 			"right_1.png",
 			"left_1.png",
@@ -604,21 +605,21 @@ void TMesh::RenderHW() {
 			"front_1.png",
 			"back_11.png"
 	};
-	
+
 	int width, height, nrChannels;
 	unsigned char* data;
-	
-	for (unsigned int i = 0; i <faces.size(); i++)
+
+	for (unsigned int i = 0; i < faces.size(); i++)
 	{
 		data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
 		if (data == nullptr) {
 			std::cerr << "Image reading failed." << std::endl;
-			return;
+			return 0;
 		}
 		else if (nrChannels != 3 && nrChannels != 4) {
 			//std::cerr << "The loaded image doesn't have RGB color components." << std::endl;
 			//std::cerr << "The loaded image has " << nrChannels << " channels" << std::endl;
-			return;
+			return 0;
 		}
 		else {
 			//std::cout << "The image loaded has size " << width << "x" << height << std::endl;
@@ -630,6 +631,24 @@ void TMesh::RenderHW() {
 		);
 	}
 
+	return textureID;
+}
+
+void TMesh::RenderHW() {
+	unsigned int nameTex;	
+#if 0
+	if (envReflec == 0)	{  // 1 for reflect, tpot
+		glDepthMask(GL_FALSE);		
+	}
+	else {
+		glDepthMask(GL_TRUE);
+	}
+	
+	glDepthFunc(GL_LESS);
+	glEnable(GL_DEPTH_TEST);
+#endif
+
+	nameTex=cubeTexture();
 	glEnable(GL_TEXTURE_CUBE_MAP);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -646,14 +665,36 @@ void TMesh::RenderHW() {
 	glColorPointer(3, GL_FLOAT, 0, (float*)colors);
 	glNormalPointer(GL_FLOAT, 0, (float*)normals);
 	glDrawElements(GL_TRIANGLES, 3 * trisN, GL_UNSIGNED_INT, tris);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, nameTex);
 	glDisable(GL_TEXTURE_CUBE_MAP);
+	glDisableClientState(GL_NORMAL_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+#if 0
+	if (envReflec == 0) {		
+		glDepthMask(GL_TRUE);
+	}
+#endif
+}
+void TMesh::RenderHWBB() {
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+
+	glVertexPointer(3, GL_FLOAT, 0, (float*)verts);
+	glColorPointer(3, GL_FLOAT, 0, (float*)colors);
+	glNormalPointer(GL_FLOAT, 0, (float*)normals);
+	glDrawElements(GL_TRIANGLES, 3 * trisN, GL_UNSIGNED_INT, tris);
+
+
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
 
 }
-
 #if 0
 // projection + rasterization pipeline
 for each triangle mesh tm
