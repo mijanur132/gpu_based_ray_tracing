@@ -634,8 +634,51 @@ unsigned int TMesh::cubeTexture() {
 	return textureID;
 }
 
+unsigned int TMesh::cubeTexture2() {
+
+	unsigned int textureID;
+	glGenTextures(2, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	vector<std::string> faces =
+	{
+			"right.png",
+			"left.png",
+			"top.png",
+			"bottom.png",
+			"front.png",
+			"back.png"
+};
+
+	int width, height, nrChannels;
+	unsigned char* data;
+
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data == nullptr) {
+			std::cerr << "Image reading failed." << std::endl;
+			return 0;
+		}
+		else if (nrChannels != 3 && nrChannels != 4) {
+			//std::cerr << "The loaded image doesn't have RGB color components." << std::endl;
+			//std::cerr << "The loaded image has " << nrChannels << " channels" << std::endl;
+			return 0;
+		}
+		else {
+			//std::cout << "The image loaded has size " << width << "x" << height << std::endl;
+		}
+
+		glTexImage2D(
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+		);
+	}
+
+	return textureID;
+}
 void TMesh::RenderHW() {
-	unsigned int nameTex;	
+	unsigned int nameTex,nameTex2;	
 #if 0
 	if (envReflec == 0)	{  // 1 for reflect, tpot
 		glDepthMask(GL_FALSE);		
@@ -647,8 +690,9 @@ void TMesh::RenderHW() {
 	glDepthFunc(GL_LESS);
 	glEnable(GL_DEPTH_TEST);
 #endif
-
-	nameTex=cubeTexture();
+	
+	nameTex2=cubeTexture2();
+	nameTex = cubeTexture();
 	glEnable(GL_TEXTURE_CUBE_MAP);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -666,11 +710,16 @@ void TMesh::RenderHW() {
 	glNormalPointer(GL_FLOAT, 0, (float*)normals);
 	glDrawElements(GL_TRIANGLES, 3 * trisN, GL_UNSIGNED_INT, tris);
 
+	
+	glBindTexture(GL_TEXTURE_CUBE_MAP, nameTex2);		
 	glBindTexture(GL_TEXTURE_CUBE_MAP, nameTex);
+		
+	
 	glDisable(GL_TEXTURE_CUBE_MAP);
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
+	glBindTexture(GL_TEXTURE_2D, 0);
 #if 0
 	if (envReflec == 0) {		
 		glDepthMask(GL_TRUE);
@@ -695,31 +744,3 @@ void TMesh::RenderHWBB() {
 	glDisableClientState(GL_VERTEX_ARRAY);
 
 }
-#if 0
-// projection + rasterization pipeline
-for each triangle mesh tm
-
-for each vertex v of tm
-	v' = ppc.Project(v)		// fixed pipeline, CPU
-	v' = VertexShader(v)	// GPU programming
-
-for each triangle t in tm
-	{t1, t2, ..., tn} = GeometryShader(t) // GPU programming
-	aabb = AABB(t.v'0, t.v'1, t.v'2)
-	aabb.ClipWithFrame()
-	if (clipped aabb empty)
-		continue
-		SetRasterizationParametersNumeratorLinearExpressions
-		SetDenominatorLinearExpression
-		for each row v of aabb
-			for each column u of aabb
-				if (uv not in t)
-					continue;
-				currz = LEZ(u, v, 1) / DEN(u, v)
-				if (currz hidden)
-					continue
-				ZB(u, v) = currz
-				FB(u, v) = LERGB(u, v)/DEN(u, v)
-				FB(u, v) = FRAGMENTSHADER(u, v, currz, currR, currG, currB, ...) // GPU programming
-
-#endif
