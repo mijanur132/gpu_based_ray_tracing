@@ -17,7 +17,7 @@ struct PixelDataOutput {
 };
 
 
-float IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir);
+float3 IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir);
 
 VertexDataOutput VertexMain(VertexDataInput vdi, 
   uniform float4x4 modelViewProj, uniform float morphFraction,
@@ -71,76 +71,98 @@ VertexDataOutput VertexMain(VertexDataInput vdi,
 
 PixelDataOutput FragmentMain(VertexDataOutput pdi, uniform float3 ppcC,
 	uniform float3 billv0, uniform float3 billv1,uniform float3 billv2,uniform float3 billv3,
-	uniform samplerCUBE environmentMap, uniform sampler2D environmentMap2, uniform float envReflec) 
+	 uniform samplerCUBE environmentMap, uniform sampler2D environmentMap2,uniform float envReflec) 
 {	
 	PixelDataOutput ret;
 	//ret.color = pdi.color;
-
-	//ret.color.rgb=float3(envReflec,1,0);
-	//return ret;
-
+	
 	float3 eyeRay = normalize(pdi.vxyz-ppcC);
 	float3 normal = normalize(pdi.normal);
+	
+	float2 dir=float2(pdi.vxyz[0],pdi.vxyz[1]);
+	float3 FragColor = tex2D(environmentMap2, dir);
+	ret.color.rgb=FragColor;	
 
-	if (envReflec==0)	
+	
+
+	if (envReflec==0)	//bckg
 	{		
 		float3 Ray = eyeRay;		
 		float3 FragColor = texCUBE(environmentMap, eyeRay);
-		ret.color.rgb=FragColor;		
+		ret.color.rgb=FragColor;			
 		return ret;
-	
+			
 	}
 
-	if (envReflec==1){
+	if (envReflec==1)
+	{     //tpot
 		float3 Ray = eyeRay;
 		float3 reflectedRay = reflect(Ray, normal);
 		reflectedRay=normalize(reflectedRay);
 		float3 FragColor = texCUBE(environmentMap, reflectedRay);
 		ret.color.rgb=FragColor;
 
+
 		
 		float3 dir = reflectedRay;
 		float3 O = pdi.vxyz;
-		float ret1 = IntersectTriangleWithRay(billv0,billv1,billv2,O,dir);	
-		float ret2 = IntersectTriangleWithRay(billv1,billv3,billv2, O, dir);
+		float3 ret1 = IntersectTriangleWithRay(billv0,billv1,billv2,O,dir);	
+		float3 ret2 = IntersectTriangleWithRay(billv1,billv3,billv2, O, dir);
 		
-			if(ret1==1)
+			if(ret1[1]>0)
 				{
-				   float3 FragColor = texCUBE(environmentMap, pdi.vxyz);
-					ret.color.rgb=FragColor;
-					eyeRay[0]=eyeRay[0]-2;
-					eyeRay=normalize(eyeRay);
+				  // float3 FragColor = tex2D(environmentMap2, pdi.vxyz);
+					//ret.color.rgb=FragColor;
+					//eyeRay[0]=eyeRay[0]-2;
+					//eyeRay=normalize(eyeRay);
+					float3 newP=billv0*ret1[2]+billv1*ret1[0]+billv2*ret1[1];
 					ret.color.rgb=texCUBE(environmentMap,eyeRay);
+					ret.color.rgb=float3(1,0,1);
+					float3 newRay=newP-float3(0,0,0);
+					ret.color.rgb=texCUBE(environmentMap,newRay);
+					return ret;
 				}
 
-				else if(ret2==1)
+				else if(ret2[0]>0)
 				{
-					float3 FragColor = texCUBE(environmentMap, pdi.vxyz);
-					ret.color.rgb=FragColor;
-					eyeRay[0]=eyeRay[0]-2;
-					eyeRay=normalize(eyeRay);
+					//float3 FragColor = tex2D(environmentMap2, pdi.vxyz);
+					//ret.color.rgb=FragColor;
+					//eyeRay[0]=eyeRay[0]-2;
+					//eyeRay=normalize(eyeRay);
 					ret.color.rgb=texCUBE(environmentMap,eyeRay);
+					ret.color.rgb=float3(1,0,1);
+					float3 newP1=billv1*ret2[2]+billv3*ret2[0]+billv2*ret2[1];
+					//ret.color.rgb=texCUBE(environmentMap,eyeRay);
+					//ret.color.rgb=float3(1,0,1);
+					float3 newRay=newP1-float3(0,0,0);
+					ret.color.rgb=texCUBE(environmentMap,newRay);
+					return ret;
 				}    
 		
 		return ret;	
 	}
 
-	else
+	if (envReflec==2)
 	{
-		eyeRay[0]=eyeRay[0]-2;
-		eyeRay=normalize(eyeRay);
-		ret.color.rgb=texCUBE(environmentMap,eyeRay);
+		
+		//float2 dir=float2(pdi.vxyz[0]+billv0[0],pdi.vxyz[1]+billv0[1]);
+		//float2 dir=float2(eyeRay[0],eyeRay[1]);
+		//float3 FragColor = tex2D(environmentMap2, dir);
+		float3 newRay=pdi.vxyz-float3(0,0,0);
+		ret.color.rgb=texCUBE(environmentMap,newRay);
+		//ret.color.rgb=float3(1,0,1);
+		//ret.color.rgb=FragColor;
+		//ret.color.rgb=float3(1,0,1);
 		return ret;
-	
 	}
 
-	return ret;
+	
 
 }
 
 
 
-float  IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir)
+float3  IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir)
 {
 	float t;
 	float3 barycc;
@@ -164,7 +186,7 @@ float  IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float
 		return 0;
 	if (barycc[2] < 0.0f)
 		return 0;
-	return 1;
+	return barycc;
 
 }
 
