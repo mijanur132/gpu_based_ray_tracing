@@ -48,4 +48,6 @@ public:
 	void RenderHW();
 	void RenderHWBB();
 	unsigned int cubeTexture();
+	unsigned int cubeTexture2();
+	//void LoadResources();
 };

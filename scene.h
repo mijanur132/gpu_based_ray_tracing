@@ -14,10 +14,12 @@ public:
 	ShaderOneInterface *soi;
 	int envReflec = 0; //0 not reflectionBackground
 	GUI *gui;
+	GLuint textureID[2];
 	FrameBuffer *fb, *fb3, *hwfb, *gpufb, *fbEnv,*fb0,*fb1;
 	PPC *ppc, *ppcBB,*ppc3;
 	TMesh *tmeshes;
 	int tmeshesN;
+	int hwPerSessionInit;
 	Scene();
 	void DBG();
 	void NewButton();
@@ -32,9 +34,11 @@ public:
 	V3 L; // point light source
 	float ka; // ambient lighting coefficient
 	float p1; // test parameter for fragment shader
+	void PerSessionHWInit();
 
 
 	float morphFraction; // morphing parameters
+	void LoadResources();
 };
 
 extern Scene *scene;

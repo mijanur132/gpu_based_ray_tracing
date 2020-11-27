@@ -95,8 +95,13 @@ bool ShaderOneInterface::PerSessionInit(CGInterface *cgi) {
   fragmentbillv1 = cgGetNamedParameter(fragmentProgram, "billv1");
   fragmentbillv2 = cgGetNamedParameter(fragmentProgram, "billv2");
   fragmentbillv3 = cgGetNamedParameter(fragmentProgram, "billv3");
+  fragmentbillvc0 = cgGetNamedParameter(fragmentProgram, "billvc0");
+  fragmentbillvc1 = cgGetNamedParameter(fragmentProgram, "billvc1");
+  fragmentbillvc2 = cgGetNamedParameter(fragmentProgram, "billvc2");
+  fragmentbillvc3 = cgGetNamedParameter(fragmentProgram, "billvc3");
   fragmentenvReflec = cgGetNamedParameter(fragmentProgram, "envReflec");
-
+  //fragmentenvironmentMap = cgGetNamedParameter(fragmentProgram, "environmentMap");
+ // fragmentBBtex = cgGetNamedParameter(fragmentProgram, "BBtex");
 
   return true;
 
@@ -114,18 +119,31 @@ void ShaderOneInterface::PerFrameInit(float envReflecval) {
 
 
   cgSetParameter3fv(fragmentppcC, (float*)&(scene->ppc->C));
-  V3 bv0 = scene->tmeshes[5].GetCenter() + V3(-10, 10, 0); 
-  V3 bv1 = scene->tmeshes[5].GetCenter() + V3(-10, -10, 0);
-  V3 bv2 = scene->tmeshes[5].GetCenter() + V3(10, 10, 0);
-  V3 bv3 = scene->tmeshes[5].GetCenter() + V3(10, -10, 0);
+#if 1
+  V3 bv0 = scene->tmeshes[3].GetCenter() + V3(-10, 10, 0); 
+  V3 bv1 = scene->tmeshes[3].GetCenter() + V3(-10, -10, 0);
+  V3 bv2 = scene->tmeshes[3].GetCenter() + V3(10, 10, 0);
+  V3 bv3 = scene->tmeshes[3].GetCenter() + V3(10, -10, 0);
+#endif
+  V3 bvc0 = scene->tmeshes[3].colors[0];
+  V3 bvc1 = scene->tmeshes[3].colors[1];
+  V3 bvc2 = scene->tmeshes[3].colors[2];
+  V3 bvc3 = scene->tmeshes[3].colors[3];
+
+
  // cout<<"center,billvo,billv1"<< scene->tmeshes[5].GetCenter() <<bv0<< bv1<<bv2<<bv3<<endl;
   cgSetParameter3fv(fragmentbillv0, (float*) & bv0);
   cgSetParameter3fv(fragmentbillv1, (float*) & bv1);
   cgSetParameter3fv(fragmentbillv2, (float*) &bv2);
   cgSetParameter3fv(fragmentbillv3, (float*) &bv3);
+  cgSetParameter3fv(fragmentbillvc0, (float*)&bvc0);
+  cgSetParameter3fv(fragmentbillvc1, (float*)&bvc1);
+  cgSetParameter3fv(fragmentbillvc2, (float*)&bvc2);
+  cgSetParameter3fv(fragmentbillvc3, (float*)&bvc3);
   cout << "envRflect to shader:" << envReflecval << endl;
-  cgSetParameter3fv(fragmentenvReflec, (float*)&envReflecval);
-
+  cgSetParameter1f(fragmentenvReflec, envReflecval);
+ // cgSetParameter1i(fragmentenvironmentMap, scene->textureID[0]);
+  //cgSetParameter1i(fragmentBBtex, scene->textureID[1]);
 }
 
 void ShaderOneInterface::PerFrameDisable() {

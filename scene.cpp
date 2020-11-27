@@ -10,7 +10,7 @@
 #include "matrix.h"
 #include "eri.h"
 #include"cubemap.h"
-
+#include"SOIL.h"
 
 
 Scene *scene;
@@ -50,12 +50,34 @@ Scene::Scene() {
 	tmeshes[1].shader = 1;
 	tmeshes[1].SetToCube(V3(0, 0, 0), 800, 0, 1);
 
-	
+#if 0
 	tmeshes[2].LoadBin("geometry/teapot1K.bin");
 	tmeshes[2].SetCenter(V3(0.0f, 0.0f, -250.0f));
-	tmeshes[2].onFlag = 1;
+	tmeshes[2].onFlag = 0;
 	tmeshes[2].shader = 0;//
 	tmeshes[2].onBillboard = 1;
+#endif
+
+
+	V3 qverts[4];
+	V3 qcolors[4];
+
+	float qz = -100.0f;
+	float qs = 20.0f;
+	qverts[0] = V3(-qs, qs, qz);
+	qverts[1] = V3(-qs, -qs, qz);
+	qverts[2] = V3(qs, -qs, qz);
+	qverts[3] = V3(qs, qs, qz);
+	qcolors[0] = V3(0.0f, 0.0f, 1.0f);
+	qcolors[1] = V3(0.0f, 1.0f, 1.0f);
+	qcolors[2] = V3(1.0f, 1.0f, 1.0f);
+	qcolors[3] = V3(1.0f, 0.0f, 1.0f);
+	tmeshes[3].SetQuad(qverts, qcolors);
+	//tmeshes[1].SetQuad(qverts, qcolors);
+	tmeshes[3].Translate(V3(-22.0f, 0.0f, 0.0f));
+	tmeshes[3].onFlag = 1;
+	tmeshes[3].shader = 1;//
+	//tmeshes[3].SetCenter(V3(0.0f, 0.0f, -120.0f));
 
 	//tmeshes[9].SetToCube(V3(0, 0, -50), 20, 0, 1);
 	tmeshes[9].LoadBin("geometry/teapot1K.bin");
@@ -67,7 +89,7 @@ Scene::Scene() {
 	hwfb = new FrameBuffer(u0 + w + 30, v0, w, h, 0);
 	hwfb->label("HW fb");
 	hwfb->isHW = 1;
-	hwfb->show();
+	//hwfb->show();
 	//hwfb->redraw();
 
 	gpufb = new FrameBuffer(u0 + w + 30, v0 + h + 50, w, h, 0);
@@ -75,8 +97,9 @@ Scene::Scene() {
 	gpufb->isHW = 2;
 	gpufb->show();
 
-	RenderHW();
-	
+
+	//RenderHWBB();
+	//hwfb->SaveAsTiff("hwfb.TIFF");
 #if 0
 	V3 bv0 = tmeshes[5].GetCenter() + V3(-10, 10, 0);
 	V3 bv1 = tmeshes[5].GetCenter() + V3(-10, -10, 0);
@@ -159,6 +182,11 @@ void Scene::RenderGPU() {
 		{
 			envReflec = 0;
 			tmeshes[tmi].envReflec = 0;
+			if (tmi == 3)//bb
+			{
+				envReflec = 2;
+				tmeshes[tmi].envReflec = 2;
+			}
 			
 			if (tmi == 9)//tpot
 			{
@@ -166,10 +194,13 @@ void Scene::RenderGPU() {
 				tmeshes[tmi].envReflec = 1;
 			}
 			if (cgi == NULL) {
+				PerSessionHWInit();
 				cgi = new CGInterface();
 				cgi->PerSessionInit();
 				soi = new ShaderOneInterface();
 				soi->PerSessionInit(cgi);
+
+
 			}
 				
 			// set intrinsics
@@ -178,7 +209,7 @@ void Scene::RenderGPU() {
 			V3 lookatP = tmeshes[9].GetCenter();
 			V3 currC = ppc->C;
 			V3 upv(0, 1, 0);
-			V3 newC = currC.RotatePoint(lookatP, upv, 2.0f);
+			V3 newC = currC.RotatePoint(lookatP, upv, 5.0f);
 			ppc->SetPose(newC, lookatP, upv);
 			ppc->SetExtrinsicsHW();
 			// per frame initialization
@@ -195,7 +226,8 @@ void Scene::RenderGPU() {
 			tmeshes[tmi].RenderHWBB();
 		}
 	}
-	   
+
+	//gpufb->SaveAsTiff("gpufb.TIFF");
 }
 
 
@@ -224,14 +256,21 @@ void Scene::RenderHWBB() {
 			continue;
 		tmeshes[tmi].RenderHWBB();
 	}
+	hwfb->SaveAsTiff("hwfb.TIFF");
 }
 
 
 
 void Scene::DBG() {
+	{
+
+		gpufb->redraw();
+
+
+	}
 
 	{
-		int fN = 1000;
+		int fN = 1;
 		for (int i = 0; i < fN; i++) {			
 			gpufb->redraw();
 			Fl::check();
@@ -669,3 +708,169 @@ int Scene::RayTrace(V3 rO, V3 rdir, int rayOrder, V3& rc, float &currz) {
 
 }
 
+void Scene::PerSessionHWInit() {
+
+	if (hwPerSessionInit)
+		return;
+
+	glewInit();
+	GLuint texs[2];
+	glGenTextures(2, texs);
+
+#if 0
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texs[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	FrameBuffer* tex = new FrameBuffer(0, 0, 64, 64, 0);
+	tex->SetChecker(0xFF000000, 0xFFFFFFFF, 8);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		tex->w, tex->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex->pix);
+#endif
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texs[0]);
+	texs[0] = SOIL_load_OGL_cubemap("right.png",
+		"left.png",
+		"top.png",
+		"bottom.png",
+		"front.png",
+		"back.png",
+		SOIL_LOAD_AUTO,
+		SOIL_CREATE_NEW_ID,
+		SOIL_FLAG_MIPMAPS);
+		
+	// To prevent artifacts at the edges, use clamping at texture bounds.
+	
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+
+
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, texs[1]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	FrameBuffer* tex2 = new FrameBuffer(0, 0, 64, 64, 0);
+	tex2->SetChecker(0xFF0000FF, 0xFFFFFFFF, 8);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		tex2->w, tex2->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex2->pix);
+	//texs[1] = SOIL_load_OGL_texture("panaroma.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	hwPerSessionInit = 1;
+
+}
+
+
+void Scene::LoadResources()
+{	
+	glGenTextures(2, textureID);
+	//glActiveTexture(GL_TEXTURE0 + 0);
+	
+	glBindTexture(GL_TEXTURE_2D, textureID[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	FrameBuffer* tex2 = new FrameBuffer(0, 0, 64, 64, 0);
+	tex2->SetChecker(0xFFFFFFFF, 0xFFFF0000, 8);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex2->w, tex2->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex2->pix);
+
+	//glActiveTexture(GL_TEXTURE0 + 1);
+	//glGenTextures(1, &(textureID[1]));
+	glBindTexture(GL_TEXTURE_2D, textureID[1]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	FrameBuffer* tex = new FrameBuffer(0, 0, 64, 64, 0);
+	tex->SetChecker(0xFFFFFFFF, 0xFF000000, 8);
+	glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,tex->w, tex->h,0,GL_RGBA,GL_UNSIGNED_BYTE,tex->pix);
+
+
+
+	return;
+	//glGenTextures(2, textureID);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_CUBE_MAP, textureID[0]);
+
+#if 0
+	//glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	textureID[0] = SOIL_load_OGL_cubemap("right.png",
+		"left.png",
+		"top.png",
+		"bottom.png",
+		"front.png",
+		"back.png",
+		SOIL_LOAD_AUTO,
+		SOIL_CREATE_NEW_ID,
+		SOIL_FLAG_MIPMAPS);
+
+	
+
+	// To prevent artifacts at the edges, use clamping at texture bounds.
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID[0]);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	
+
+	return;
+#endif
+#
+#if 0	
+	GLuint g_EnvCubeMap1 = SOIL_load_OGL_cubemap(
+		"right_1.png",
+		"left_1.png",
+		"top_1.png",
+		"bottom_1.png",
+		"front_1.png",
+		"back_11.png",
+		SOIL_LOAD_AUTO,
+		SOIL_CREATE_NEW_ID,
+		SOIL_FLAG_MIPMAPS);
+
+	// To prevent artifacts at the edges, use clamping at texture bounds.
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	// Make sure we unbind and disable the cube map texture.
+	glBindTexture(GL_TEXTURE_CUBE_MAP, g_EnvCubeMap1);
+	glDisable(GL_TEXTURE_CUBE_MAP);
+#endif 
+
+#if 1
+
+	//glEnable(GL_TEXTURE_2D);
+	//glBindTexture(GL_TEXTURE_2D, textureID[1]);
+
+	textureID[1] = SOIL_load_OGL_texture("right.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	
+	
+
+	//glEnd();
+
+//	glDisable(GL_TEXTURE_2D);
+#endif 
+}

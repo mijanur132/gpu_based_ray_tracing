@@ -7,8 +7,8 @@ struct VertexDataInput {
 
 struct VertexDataOutput {
 	float4 projv  : POSITION;
-	float3 normal;
-	float3 vxyz;
+	float3 normal: TEXCOORD0;
+	float3 vxyz: TEXCOORD1;
 	float3 color : COLOR;
 };
 
@@ -16,15 +16,30 @@ struct PixelDataOutput {
 	float3 color : COLOR;
 };
 
-int  DoesIntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir);
-float3 IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir);
+int triangleIntersection(float3 dir,float3 currP, float3 v0, float3 v1, float3 v2);
+float IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir);
+
 VertexDataOutput VertexMain(VertexDataInput vdi, 
   uniform float4x4 modelViewProj, uniform float morphFraction,
   uniform float3 objectCenter, uniform float sphereRadius) {
+
   VertexDataOutput ret;
+
+  // morph vertex
+//  float3 ray = normalize((vdi.vertex.xyz - objectCenter)); // direction from sphere
+				// center to vertex
+//  float3 sv = objectCenter + ray*sphereRadius;  // position of vertex on sphere
+//  float4 mv; // morphed vertex
+//  mv.xyz = vdi.vertex.xyz + (sv-vdi.vertex.xyz)*morphFraction; 
+//  mv.w = 1.0f;
+
+//  mv = vdi.vertex;
+
+//  ret.projv = mul(modelViewProj, mv);
   ret.projv = mul(modelViewProj, vdi.vertex);
   ret.normal = vdi.normal;
   ret.vxyz = vdi.vertex.xyz;
+//  ret.vxyz = mv.xyz;
   ret.color = vdi.color;
   return ret;
 
@@ -69,89 +84,75 @@ VertexDataOutput VertexMain(VertexDataInput vdi,
 //  3. issue texture coordinates, the same way xyz, rgb, nxnynz are issued per vertex
 
 PixelDataOutput FragmentMain(VertexDataOutput pdi, uniform float3 ppcC,
-	uniform float3 billv0, uniform float3 billv1,uniform float3 billv2,uniform float3 billv3,
-	uniform float3 billvc0, uniform float3 billvc1,uniform float3 billvc2,uniform float3 billvc3,
-	 uniform samplerCUBE environmentMap:TEXUNIT0, uniform sampler2D BBtex:TEXUNIT1, uniform float envReflec) 
-{	
-	PixelDataOutput ret;
-	//ret.color = pdi.color;
+	uniform float3 billv0, uniform float3 billv1,uniform float3 billv2,uniform float3 billv3) 
+{
 
-	float3 eyeRay = normalize(pdi.vxyz-ppcC);
-	float3 normal = normalize(pdi.normal);
+	  PixelDataOutput ret;
+	  ret.color = pdi.color;
+
+	  // eye ray computation
+	  float3 eyeRay = normalize(pdi.vxyz-ppcC);
+
+	  // reflected ray computation
+	  float3 normal = normalize(pdi.normal);
+	  float d_dot_n=dot(eyeRay,normal);
+	  d_dot_n= d_dot_n*2;
+	  float3  normal_n_d_dot_n=dot(normal, d_dot_n);
+	  float3 reflectedRay=eyeRay-normal_n_d_dot_n;
+  
+  //float3 reflectedRay = reflect(eyeRay, normal); // requires more work
+	float3 c=float3(22,0,-50);
+	float3 bv0 = c + float3(-10, 10, 0);
+	float3 bv1 = c + float3(-10, -10, 0);
+	float3 bv2 = c + float3(10, 10, 0);
+	float3 bv3 = c + float3(10, -10, 0);
+	float3 RayO = float3(0,0,-70)+ float3(11, 8, 0);	
+	float3 Ray = RayO- ppcC;
+	Ray = normalize(Ray);
+	normal =float3(0,0,1);
+	normal=normalize(normal);
+	d_dot_n=dot(Ray,normal);
+	d_dot_n= d_dot_n*2;
+	normal_n_d_dot_n=dot(normal, d_dot_n);
+	reflectedRay=Ray-normal_n_d_dot_n;
+	reflectedRay = reflect(Ray, normal);
+	reflectedRay=normalize(reflectedRay);
+	//reflectedRay=float3(0.141421, 0, 0.989949);
+	//reflectedRay=float3(0.113547, 0, 0.993533);
+	//reflectedRay=float3(0.090, 0, 0.995037);
+	float3 currc; float currz;
+	float3 dir = reflectedRay;
+	float3 O = RayO;
+	float ret1 = IntersectTriangleWithRay(bv0,bv1,bv2,O,dir);	
+	float ret2 = IntersectTriangleWithRay(bv2, bv3, bv0, O, dir);
 	
-	if (envReflec==2)
-	{			
-		ret.color.rgb = tex2D(BBtex, pdi.color.rg).rgb;		
-		return ret;
-	}
 	
-	if (envReflec==0)	//bckg
-	{		
-		float3 Ray = eyeRay;		
-		ret.color.rgb = texCUBE(environmentMap,eyeRay).rgb;			
-		return ret;
-			
-	}
-
-
-	if (envReflec==1)	{     //tpot
-
-		float3 Ray = eyeRay;
-		float3 reflectedRay = reflect(Ray, normal);
-		reflectedRay=normalize(reflectedRay);
-		ret.color.rgb = texCUBE(environmentMap, reflectedRay);
-		float3 dir = reflectedRay;
-		float3 O = pdi.vxyz;
-		float currz1,currz2;
-		int ret11 = DoesIntersectTriangleWithRay(billv0,billv1,billv2,O,dir);	
-		int ret2 = DoesIntersectTriangleWithRay(billv1,billv3,billv2, O, dir);
-		
-			if(ret11>0)
-				{
-			  	    float3 ret1 = IntersectTriangleWithRay(billv0,billv1,billv2,O,dir);
-				 	float3 c0=billvc0.xyz;
-					float3 c1=billvc1.xyz;
-					float3 c2=billvc2.xyz;
-					float3 rc0=c0*ret1;
-					float3 rc1=c1*ret1;
-					float3 rc2=c2*ret1;
-					float3 rc=rc0+rc1+rc2;
-					float2 ab=float2(rc[0],rc[1]);
-					ret.color.rgb=tex2D(BBtex,ab);						
-					return ret;
-				}
-
-			else if(ret2>0)
-				{	
-		  			float3 ret1 = IntersectTriangleWithRay(billv1,billv3,billv2,O,dir);
-				 	float3 c0=billvc0.xyz;
-					float3 c1=billvc1.xyz;
-					float3 c2=billvc2.xyz;
-					float3 rc0=c0*ret1;
-					float3 rc1=c1*ret1;
-					float3 rc2=c2*ret1;
-					float3 rc=rc0+rc1+rc2;
-					float2 ab=float2(rc[0],rc[1]);
-					ret.color.rgb=tex2D(BBtex,ab);							
-					return ret;
-				}  
-				else{
-				
-				}
-				return ret;					
+	//int ret1=IntersectTriangleWithRay(reflectedRay,pdi.vxyz,billv0,billv1,billv2);
+	//int ret2=IntersectTriangleWithRay(reflectedRay,pdi.vxyz,billv2,billv3,billv0);
+	if(ret1==1)
+	{
+	   float3 temp1={1,0.0f,0.0f};
+		ret.color.rgb=temp1;
 	}
 
+	else if(ret2==1)
+	{
+		float3 temp1={0.2f,0.0f,0.0f};
+		ret.color.rgb=temp1;
+	}
 
-	
+	else
+	{
+		float3 temp1={ret1,ret2,0.0f};
+		ret.color.rgb=temp1;
+	}
+    
+	return ret;
 
 }
-
-
-
-float3  IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir)
+float  IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir)
 {
 	float t;
-	float currz;
 	float3 barycc;
 	float3x3 tM1=float3x3(v0,v1,v2);
 	float3x3 tM = inverse(tM1);
@@ -162,54 +163,75 @@ float3  IntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, floa
 	
 	
 	if (t < 0.0f)
-	return 0;
+		return 0;
 	
-
+	//barycc = q + dot(r,t);
 	barycc = q + r*t;
-
+	//return barycc[1];
 	if (barycc[0] < 0.0f)
 		return 0;
 	if (barycc[1] < 0.0f )
 		return 0;
 	if (barycc[2] < 0.0f)
 		return 0;
-	currz = 1.0f / t;
-	return barycc;
-
-}
-
-
-int  DoesIntersectTriangleWithRay(float3 v0, float3 v1, float3 v2, float3 O, float3 dir)
-{
-	float t;
-	float currz;
-	float3 barycc;
-	float3x3 tM1=float3x3(v0,v1,v2);
-	float3x3 tM = inverse(tM1);
-	tM=transpose(tM);
-	float3  q = {dot(tM[0],O),dot(tM[1],O),dot(tM[2],O)};
-	float3  r = {dot(tM[0],dir),dot(tM[1],dir),dot(tM[2],dir)};
-	t = (1.0f - (q[0] + q[1] + q[2])) / (r[0] + r[1] + r[2]);
-	
-	
-	if (t < 0.0f)
-	return 0;
-	
-
-	barycc = q + r*t;
-
-	if (barycc[0] < 0.0f)
-		return 0;
-	if (barycc[1] < 0.0f )
-		return 0;
-	if (barycc[2] < 0.0f)
-		return 0;
-	
 	return 1;
 
 }
+int triangleIntersection(float3 dir,float3 currP, float3 v0, float3 v1, float3 v2)
+{
+	int ret=0;
+	float3 orig = currP;
+	float3 v0v1 = v1 - v0;
+	float3 v0v2 = v2 - v0;	
+	float3 N = cross(v0v1,v0v2); 
+	N=normalize(N);
 
+	float NdotRayDirection = dot(N,dir);
+	
+	if (abs(NdotRayDirection) < 0.001) // almost 0 
+		{	
+			return ret;
+		}
+	
+	float d = dot(N,v0);
+	float Norig=dot(N,orig);
+	
+	float t = (Norig + d) / NdotRayDirection;
+	
+	
+	if (t < 0) 
+		{
+			return ret;
+		}
+	
+	float3 P = orig + dir*t;
 
+	float3 edge0 = v1 - v0;
+	float3 vp0 = P - v0;
+	float3 C = cross(edge0,vp0);
+	if (dot(N,C) < 0) 
+	{
+		return ret;
+		}
+	
+	float3 edge1 = v2 - v1;
+	float3 vp1 = P - v1;
+	C = cross(edge1,vp1);
+	if (dot(N,C) < 0) 
+	{
+		return ret;
+		}
+	
+	float3 edge2 = v0 - v2;
+	float3 vp2 = P - v2;
+	C = cross(edge2,vp2);
+	if (dot(N,C) < 0) 
+	{
+		return ret;
+	}	
+
+	return 1;
+}
 
 VertexDataOutput VertexMainOLD(VertexDataInput vdi, 
   uniform float4x4 modelViewProj, uniform float sphereRadius,

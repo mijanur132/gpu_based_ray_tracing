@@ -2,12 +2,12 @@
 
 #include <fstream>
 #include <iostream>
-#include "stb_image.h"
-#include "stb_image_write.h"
+//#include "stb_image_write.h"
 #include "M33.h"
 #include "TMesh.h"
 #include "AABB.h"
 #include "vector"
+//#include "SOIL.h"
 
 using namespace std;
 
@@ -589,12 +589,16 @@ void TMesh::Scale(float scf) {
 	Translate(c);
 
 }
+#if 0
 
 unsigned int TMesh::cubeTexture() {
 
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	GLuint textureID[2];
+
+	glGenTextures(2, textureID);	
+	//glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID[0]);
 
 	vector<std::string> faces =
 	{
@@ -607,7 +611,7 @@ unsigned int TMesh::cubeTexture() {
 	};
 
 	int width, height, nrChannels;
-	unsigned char* data;
+	unsigned char* data, *data1;
 
 	for (unsigned int i = 0; i < faces.size(); i++)
 	{
@@ -631,7 +635,68 @@ unsigned int TMesh::cubeTexture() {
 		);
 	}
 
-	return textureID;
+	//glEnable(GL_TEXTURE_CUBE_MAP);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	
+	//glActiveTexture(GL_TEXTURE1);
+	//glBindTexture(GL_TEXTURE_2D, textureID[1]);
+
+	 faces =
+	{
+			"self.JPG",
+#if 0
+			"left.png",
+			"top.png",
+			"bottom.png",
+			"front.png",
+			"back.png"
+#endif
+	};
+
+	 glBindTexture(GL_TEXTURE_2D, textureID[1]);
+	
+	for (unsigned int i = 0; i < 1; i++)
+	{
+		data1 = stbi_load("self.JPG", &width, &height, &nrChannels, 0);
+		if (data1 == nullptr) {
+			std::cerr << "Image reading failed." << std::endl;
+			return 0;
+		}
+		else if (nrChannels != 3 && nrChannels != 4) {
+			//std::cerr << "The loaded image doesn't have RGB color components." << std::endl;
+			//std::cerr << "The loaded image has " << nrChannels << " channels" << std::endl;
+			return 0;
+		}
+		else {
+			//std::cout << "The image loaded has size " << width << "x" << height << std::endl;
+		}
+
+		glTexImage2D(
+			GL_TEXTURE_2D,
+			0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data1
+		);
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glBindTexture(GL_TEXTURE_2D, 0);
+#if 0
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 1);
+	
+#endif
+	return 0;
 }
 
 unsigned int TMesh::cubeTexture2() {
@@ -676,10 +741,14 @@ unsigned int TMesh::cubeTexture2() {
 	}
 
 	return textureID;
+
 }
+
+#endif
+
 void TMesh::RenderHW() {
 	unsigned int nameTex,nameTex2;	
-#if 0
+#if 1
 	if (envReflec == 0)	{  // 1 for reflect, tpot
 		glDepthMask(GL_FALSE);		
 	}
@@ -691,14 +760,10 @@ void TMesh::RenderHW() {
 	glEnable(GL_DEPTH_TEST);
 #endif
 	
-	nameTex2=cubeTexture2();
-	nameTex = cubeTexture();
-	glEnable(GL_TEXTURE_CUBE_MAP);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	//nameTex2=cubeTexture2();
+	//nameTex = cubeTexture();
+
+	//LoadResources();
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -711,15 +776,15 @@ void TMesh::RenderHW() {
 	glDrawElements(GL_TRIANGLES, 3 * trisN, GL_UNSIGNED_INT, tris);
 
 	
-	glBindTexture(GL_TEXTURE_CUBE_MAP, nameTex2);		
-	glBindTexture(GL_TEXTURE_CUBE_MAP, nameTex);
+	//glBindTexture(GL_TEXTURE_CUBE_MAP, nameTex2);		
+	//glBindTexture(GL_TEXTURE_CUBE_MAP, nameTex);
 		
 	
-	glDisable(GL_TEXTURE_CUBE_MAP);
+	//glDisable(GL_TEXTURE_CUBE_MAP);
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	//glBindTexture(GL_TEXTURE_2D, 0);
 #if 0
 	if (envReflec == 0) {		
 		glDepthMask(GL_TRUE);

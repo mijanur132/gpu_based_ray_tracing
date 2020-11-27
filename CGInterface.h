@@ -39,7 +39,13 @@ class ShaderOneInterface {
   CGparameter fragmentbillv1;
   CGparameter fragmentbillv2; // test parameter
   CGparameter fragmentbillv3;
+  CGparameter fragmentbillvc0; // test parameter
+  CGparameter fragmentbillvc1;
+  CGparameter fragmentbillvc2; // test parameter
+  CGparameter fragmentbillvc3;
   CGparameter fragmentenvReflec;
+  CGparameter fragmentenvironmentMap;
+  CGparameter fragmentBBtex;
 
   CGparameter vertexMorphFraction; // place in morphing animation from 0 to 1
   CGparameter vertexObjectCenter, vertexSphereRadius; // morph parameters
